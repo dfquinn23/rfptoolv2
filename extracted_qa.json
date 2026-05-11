@@ -1,0 +1,257 @@
+[
+  {
+    "question": "Provide a brief summary of the firm’s background and history. Please include a description of the firm’s founders, and the growth of the firm over time.",
+    "answer": "APX Stream was founded in 2011 by Richard Jackson. As President and Head of Research, he is accredited by Investments and Wealth Association (IWA) as a Certified Investment Management Analyst (CIMA®). Both IWA and the CIMA accreditation maintain rigorous codes of ethics.\nAPX Stream has grown to become the largest independent global manager and distributor of investment data to the investment databases (e.g.: Investment Metrics, eVestment, PSN, Morningstar, Callan, etc.). APX Stream offers related services, including consulting, DDQ automation, and database services for intermediaries. The firm’s core mission is to enhance clients’ significance in the investment management industry through the effective deployment of market-leading data management and distribution tools, consulting, and services.\nEach of APX Stream’s product offerings is designed to address a specific strategy in that overall mission, with a singular focus on growing and retaining assets under management.\nAPX Stream’s core product is the DataDrive, a proprietary, highly connected SQL database that provides the asset manager with seamless assembly, warehousing, reconciliation (verification), and distribution of investment data across more than 55 global databases, portals, and all programable questionnaires. The DataDrive is a “composite” of every industry database, enabling automated and reliable data distribution to the industry databases and marketing collateral, such as factsheets and retention DDQs.\nThe APX Stream's database lineup changes every quarter due to factors such as industry consolidation and/or globalization. The DataDrive has established connectivity to incoming raw data sources, with additional connections being established every quarter.\nUnlike other data distribution firms that are owned by large conglomerates, APX Stream focuses exclusively on investment data management and distribution, as this is complex and highly specialized work requiring the focus of a team of experts in investment data itself, as well as marketing, sales, and technology.\nAPX Stream’s database strategy consulting services are deeply influenced by more than 30 years of broad industry experience, which lends significant credibility to APX’s client database selection, data positioning, and top-line marketing strategy work.\nAPX Stream is headquartered in Boerne, Texas. The company currently has 17 full-time employees, with additional resources and staff added every quarter as the firm continues to grow.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is the firm minority, veteran, disabled, or a woman owned business (see definition below)?",
+    "answer": "APX Stream is a Hispanic, minority-owned and accredited firm and an equal opportunity employer with over 60% of the firm’s staff are minority ethnicities.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Complete the table below outlining the ownership of the firm, inserting rows as necessary. Feel free to insert a chart too or describe the ownership in text. We are required to identify every individual/person that ultimately owns 10% or more of the company, directly or via another entity. Please contact Daniel Newman, Chief Compliance Officer, at Stockbridge to discuss if needed.",
+    "answer": "Richard Jackson, 100%",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is the firm part of a group? If so, please explain the affiliated structure and ownership structure including all majority and minority holding in related companies.",
+    "answer": "APX Stream is 100% privately held.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Please provide details of the firm’s offices including office location, business function and number of employees at each office.",
+    "answer": "APX Stream is located in Boerne, Texas, U.S.A. The firm is an investment data management, distribution, and marketing firm, with 15 employees situated in its Boerne office location, with two additional employees working remotely. Employees of the firm are full-time, dedicated employees.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Please provide names, titles and bios of all Senior Executives.",
+    "answer": "Richard Jackson, CIMA ® is the President and Director of Research. Richard is responsible for planning and directing APX Stream’s topline business strategy, sales, research, and technological development of the DataDrive. Richard has over 30 years of investment management industry experience.\n\nKevin Dunn is the Chief Operating Officer. Kevin is responsible for the day-to-day management of the firm’s data team and data operations. In addition, Kevin manages human resources, the technology development team, and all day-to-day business functions.\n\nDaniel Quinn is the Chief Marketing Officer, with responsibilities covering every aspect of APX Stream’s marketing effort, with additional responsibilities that include sales enablement, database research, and business strategy implementation.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "What is the total number of employees at the organization?",
+    "answer": "APX Stream current staff is 17 full-time employees.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is the firm regulated by the SEC or any other organization?",
+    "answer": "APX Stream is a member of Investments and Wealth Association (IWA). Richard Jackson, President and Head of Research, is accredited by IWA as a Certified Investment Management Analyst (CIMA®). Both IWA and the CIMA accreditation maintain rigorous codes of ethics.\n\nAPX Stream maintains alliances with several regulatory and independent compliance firms which assist in the monitoring of regulatory issues surrounding databases and investment data marketing by asset managers.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Have there been any significant events affecting the firm’s operations in the last year? (e.g., mergers, acquisitions, joint ventures, third party investment, executive management changes)",
+    "answer": "APX Stream has had no significant events or extraordinary changes over the past year.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is there a formal directive from the board of directors or senior management to maintain a formal Business Continuity Plan (BCP)?",
+    "answer": "APX Stream has a formal directive from senior management to maintain a formal BCP.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "What actions or occurrence prompt updates or modifications to the plan? When was the last review or update to the BCP?",
+    "answer": "APX Stream’s BCP is to be reviewed annually. The plan would be updated in the event an unforeseen scenario transpired (either directly to APX Stream, or to a business with similar business fundamentals) that would make such an update a responsible business decision that protects client interests.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Please describe the team responsible for maintaining the BCP.",
+    "answer": "The BCP is under the purview of APX Stream’s President and Chief Operating Officer.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "How often is the BCP tested and when was the last test of the BCP?",
+    "answer": "The BCP is tested every calendar year. The last test was in March 2020.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Briefly summarize the scenario used for recent testing or exercises that were performed. Was the test or exercise successful?",
+    "answer": "The last test was in March 2020, as COVID-19 became a pressing business concern. The plan was executed without incident and normal business operations were maintained.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is there a formal directive from the board of directors or senior management to maintain a formal Disaster Recovery Plan (DRP)?",
+    "answer": "APX Stream has a formal directive from senior management to maintain a formal DRP.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Do you formally test your DRP? What is the testing cadence?",
+    "answer": "DRP assessments are conducted on a semi-annual basis and training discussions occur on a quarterly basis.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Do you have a formal Incident Response policy?",
+    "answer": "APX Stream’s executive management is trained regarding incident management policies, including reporting procedures.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is your Incident Response policy tested (e.g., Tabletop Exercise)? What is the cadence of testing?",
+    "answer": "Testing on Incident Response is conducted on a yearly basis.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Please provide a description of your technology network (attach diagram if available) and indicate if you maintain a traditional server-based infrastructure or operate entirely in the cloud?",
+    "answer": "APX Stream’s servers are Windows / ASP.NET / IIS / MS SQL servers. APX maintains a cloud hosting environment based in Dallas, Texas, U.S.A.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "If you maintain a traditional server, please advise the following (skip if not applicable) Advise server location(s).",
+    "answer": "APX Stream’s servers are located in Dallas, Texas, U.S.A.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Details of physical security (data center).",
+    "answer": "The Data Center is a Tier 1 facility with enterprise security, including gated security and badge access to property and security entrance, multiple points of biometric and badge manned gates, video surveillance, and physical key security.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Do you maintain backup? How often? Where are they kept?",
+    "answer": "The DataDrive is backed up daily. Backups are maintained by APX Stream’s hosting provider. Off-server backups for DataDrive’s server are kept on a secure on-premise server.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Are alerts generated for failed back-ups? If so, what actions are taken for failed back-ups?",
+    "answer": "Alerts for failed backups are generated, and an administrator is alerted to determine the issue and restart the backup if needed.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is data periodically restored from backups for testing, and if so, how often are data restoration tests performed?",
+    "answer": "Server backup integrity is checked regularly. DataDrive’s database backups are restored biweekly for testing purposes.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Are recovery/backup locations maintained in a cold, warm or hot manner?",
+    "answer": "Recovery/backup locations are maintained in a cold manner.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "If a recovery site is not contracted, do you have agreements in place to acquire replacement equipment as needed?",
+    "answer": "APX Stream does not have agreements in place to acquire replacement equipment as needed. In APX Stream’s view, the ease with which it could acquire new computers and other relevant office equipment would not require any additional contingency plans.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "If you maintain a cloud network, please advise the following (skip if not applicable) Who is your cloud provider? (Microsoft/Office 365, 3rd party MSP, etc.)",
+    "answer": "APX Stream subscribes to Microsoft Office 365.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Do you maintain a file server, or do you use services like Office 365, Dropbox, Box, etc. to store files?",
+    "answer": "APX Stream is subscribed to Microsoft Office 365 and utilizes SharePoint for all file management and its private servers for additional document management.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Do you own or rent your equipment from the provider?",
+    "answer": "All office laptops and desktop computers are owned by APX Stream. Servers and remote desktops are rented through the firm’s hardware and technology providers, CF Dynamics and Azure.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Where are your providers’ data centers located?",
+    "answer": "APX Stream’s data center is located in Dallas, Texas.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Are Penetration Tests performed by a qualified third party? If so, how often are they performed and when was the last test performed?",
+    "answer": "Penetration Tests are not regularly performed by a qualified third party.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Are Vulnerability Assessments performed either internally or by a third party?",
+    "answer": "All system vulnerability assessments are conducted on a quarterly basis with both internal and vendor systems.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Are Phishing, Social Engineering, or Physical Penetration tests performed? If so, please explain.",
+    "answer": "Up-to-date cybersecurity for APX’s systems, including its DataDrive, is maintained via redundant backups, independent servers and third-party expert audits. APX Stream’s Chief Technology Officer and the firm’s US-based, in-house code team maintains APX Stream’s Technology RFP, which is updated as APX Stream adds additional security measures as required by new client requests.\n\nUpon request, APX Stream will provide a client with its full Technology RFP and respond to any questions from their technical team.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "What training do you maintain for employees in regard to Phishing, Social Engineering and/or Physical threats? How often are employees required to attend such trainings? Is the training mandatory?",
+    "answer": "All emails are reviewed for origin and purpose before opening.  All questionable communications are quarantined, with employee training occurring monthly. Outside resources used by APX Stream are reviewed for threats on a quarterly basis.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Who is responsible for tracking and remediating issues and vulnerabilities that arise from penetration testing or vulnerability scans?",
+    "answer": "Kevin Dunn, APX Stream Chief Operations Officer, and Richard Jackson, President, maintain responsibility.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is Multi Factor Authentication (MFA, 2FA, 2 Factor Authentication) in place for all employees when accessing the firm’s resources remotely?",
+    "answer": "The DataDrive, Microsoft 365, CRM, and all other business software have a 2-factor authentication in place.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Does your firm have a policy that describes your approach to identifying and managing material environmental, social, or governance (ESG) factors? If so, please provide a copy. If not, please indicate whether the firm is developing such a policy.",
+    "answer": "APX Stream is a minority-owned and accredited firm and an equal opportunity employer with over 60% of the firm’s staff belonging to ethnic minorities.\n\nBecause the APX Stream DataDrive captures and publishes every ESG and Diversity/Inclusion data field across all databases and automated questionnaires, the firm is well-acquainted with ESG issues and concerns within the industry. As such, APX Stream is carefully considering the relevant issues for the firm and is in the process of drafting its policy accordingly.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Does the firm have an ESG (or similar functioning) Committee? Please describe how it operates.",
+    "answer": "As a data management and distribution firm, APX Stream is fully digitized, with a strong code of ethics, and a carefully considered procurement process. As such, the firm’s day-to-day culture strongly reflects an ESG mindset, though a formal committee does not exist.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Describe your firm’s approach to workplace diversity and inclusion and how it relates to your business model.",
+    "answer": "APX Stream is a minority-owned business, with significant diversity (60%) in its employee base. Because APX Stream prefers to promote from within, the firm develops and retains its own talent in order to foster a culture of togetherness and ownership. APX Stream, by definition, maintains a strong bias towards a diversity-based business model and corporate culture.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Does your firm have a written policy addressing workplace diversity and inclusion (“D&I Policy”)?",
+    "answer": "APX Stream is a minority-owned firm with a very diverse background staff. APX Stream is non-discriminatory and all hiring practices reflect strict adherence to a non-discriminatory selection process.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Does the firm have an Anti-Harassment/Discrimination Policy? How often is training provided on the Policy to employees? Does the firm intend to adopt such a policy and, if so, when?",
+    "answer": "APX Stream has a detailed anti-harassment and anti-discriminatory policy. This is reviewed and employee acknowledged on a semi-annual basis and in the employee onboarding process.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Has your firm been subject to any judicial, regulatory, or other legal finding, formal action, or claims related to equal employment opportunity, workplace discrimination, or sexual harassment during the past five years? Please describe.",
+    "answer": "APX Stream has never been subject to any judicial, regulatory, or other legal finding, formal action, or claims related to equal employment opportunity, workplace discrimination, or sexual harassment throughout its entire history.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Does the firm comply with Subchapter VII of the Civil Rights Act of 1964, 42 U.S. Code Sections 2000(e) through 2000(e)(17), to the end that no person shall, on grounds of race, creed, color, sex or national origin be excluded from participation in, be denied benefits, or be otherwise subjected to discrimination?",
+    "answer": "APX Stream complies with all federal, state, and local prohibitions against discrimination.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "How is the firm committed to the safety of its employees?",
+    "answer": "APX Stream complies with all relevant state and local ordinances with regard to employee safety. Furthermore, throughout the course of the COVID-19 pandemic, APX Stream regularly exceeded local and state regulations in diligently maintaining a safe working environment.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "How is the firm committed to energy, water and waste efficiency?",
+    "answer": "APX Stream relies on the cloud for documentation and filing across every department. APX Stream utilizes less than one ream of paper per year for the entire office complex. All computers, lights, and chargers are shut down or unplugged on a nightly basis.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "How does your firm engage with tenants and local stakeholders to raise and improve environmental and social issues?",
+    "answer": "APX Stream works with its property management firm and fellow tenants to ensure a safe, secure working environment for all employees.  As a minority-owned and staffed firm in the State of Texas, APX Stream believes the manner in which it conducts its business is the most powerful example it can provide. As APX Stream continues to grow and becomes a more widely-recognized business leader, its ability to effect meaningful change in these areas will grow as well.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is the firm aware of any Stockbridge employee (or immediate family member of the employee) benefiting economically as a result of the firm being awarded a contract (or a contract renewed)?",
+    "answer": "APX Stream is unaware of any such benefits.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Is the firm aware of any immediate family member (spouse, sibling, child or parent) or a Stockbridge employee being an owner or director of the organization?",
+    "answer": "APX Stream is unaware of any such relationships.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "To the extent gifts or entertainment was provided to a Stockbridge person, has the firm used discretion and moderation when offering gifts or entertainment to Stockbridge representatives?",
+    "answer": "APX Stream has provided Stockbridge with no gifts or entertainment.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "If an owner, officer or director of the firm, or any employee of the firm that will be working on the Stockbridge account or assets, has been convicted of any crime or found liable in a civil or administrative proceeding or pleaded nolo contendere or agreed to any consent decree with respect to any matter involving breach of trust or fiduciary duty, fraud, securities law violations, bankruptcy law regulations, any felony, or any act or omission involving moral turpitude, has it been reported to Stockbridge?",
+    "answer": "No APX Stream employees have ever been subject to any of the sanctions noted here.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  },
+  {
+    "question": "Are there any threatened, current or past lawsuits that have been filed against your firm in the last 5 years, that could have a material financial impact on the firm or may otherwise cause significant reputational damage? Please contact Daniel Newman, Chief Compliance Officer, at Stockbridge to discuss if needed.",
+    "answer": "APX Stream has never been subject to a legal action throughout its history.",
+    "source": "StockbridgeCVA Vendor DD Questionnaire 2021 - Cybersecurity section new answers.docx"
+  }
+]

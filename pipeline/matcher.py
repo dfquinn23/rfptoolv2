@@ -1,113 +1,261 @@
-# pipeline/matcher.py
-# Two-stage matching: Qdrant vector pre-filter → LLM-as-judge reranker.
-# The LLM SCORES relevance only — it never generates new answer content.
+"""
+pipeline/matcher.py
 
-import json
+Two-stage matching pipeline for incoming RFP questions.
+
+Stage 1 — Vector search: embed the question, retrieve top N candidates from Qdrant.
+Stage 2 — LLM judge: evaluate each candidate's relevance, select the best match.
+
+The LLM never generates answers. Its only role is to evaluate which stored answer
+best addresses the incoming question. The returned answer is always verbatim from
+the knowledge base.
+
+Routing tiers (based on confidence score 0-100):
+  ≥ 80  → AUTO     : insert answer directly
+  50-79 → REVIEW   : surface for light human review
+  < 50  → HUMAN    : no good match, needs manual answer
+"""
+
+import os
+from dataclasses import dataclass
+from dotenv import load_dotenv
 from openai import OpenAI
-from qdrant_client.models import ScoredPoint
-from core.config import (
-    OPENAI_API_KEY, OPENAI_EMBEDDING_MODEL, OPENAI_LLM_MODEL,
-    COLLECTION_RFP_ANSWERS, RETRIEVAL_TOP_K,
-)
-from core.qdrant_client import get_client
+from qdrant_client import QdrantClient
 
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+load_dotenv()
 
-RERANK_SYSTEM_PROMPT = """You are evaluating whether a past RFP answer is relevant to a new question.
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
 
-Your only job is to score the semantic relevance — do NOT generate new content.
+OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY")
+QDRANT_URL       = os.getenv("QDRANT_URL")
+QDRANT_API_KEY   = os.getenv("QDRANT_API_KEY")
+COLLECTION_NAME  = os.getenv("COLLECTION_NAME", "past_rfp_answers")
 
-Scoring guide:
-  0.90–1.00: The answer directly and completely addresses the question. Could be used as-is.
-  0.70–0.89: Substantially relevant; may need minor editing but core content applies.
-  0.50–0.69: Partially relevant; addresses related topic but misses key aspects.
-  0.00–0.49: Not relevant; different topic or too vague to be useful.
+EMBEDDING_MODEL  = "text-embedding-3-small"
+JUDGE_MODEL      = "gpt-4o-mini"
+CANDIDATE_COUNT  = 5       # how many candidates to pull from Qdrant
 
-Respond ONLY with a JSON object:
-{"score": 0.87, "reason": "One sentence explaining your score."}
+THRESHOLD_AUTO   = 80      # confidence ≥ 80 → auto-insert
+THRESHOLD_REVIEW = 50      # confidence 50-79 → light review
+                           # confidence < 50  → human queue
 
-No preamble. No markdown fences."""
+JUDGE_PROMPT = """You are evaluating whether a stored answer from a completed RFP 
+adequately addresses an incoming RFP question.
+
+Incoming question:
+{question}
+
+Candidate answer:
+{answer}
+
+Score how well this answer addresses the question on a scale of 0 to 100:
+- 90-100: The answer directly and completely addresses the question.
+- 70-89:  The answer addresses the question well with minor gaps.
+- 50-69:  The answer partially addresses the question but is missing key points.
+- 25-49:  The answer is tangentially related but does not directly answer the question.
+- 0-24:   The answer is unrelated to the question.
+
+Reply with ONLY a JSON object in this format: {{"score": <integer 0-100>, "reason": "<one sentence>"}}"""
 
 
-def get_embedding(text: str) -> list[float]:
-    response = openai_client.embeddings.create(
-        model=OPENAI_EMBEDDING_MODEL,
-        input=text,
+# ---------------------------------------------------------------------------
+# Data types
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MatchResult:
+    question:        str    # incoming question
+    answer:          str    # verbatim answer from knowledge base
+    matched_question: str   # the question this answer was originally paired with
+    source:          str    # source document filename
+    confidence:      int    # 0-100
+    routing:         str    # "AUTO", "REVIEW", or "HUMAN"
+    reason:          str    # LLM's one-sentence explanation
+    vector_score:    float  # raw Qdrant cosine similarity score
+
+
+# ---------------------------------------------------------------------------
+# Clients
+# ---------------------------------------------------------------------------
+
+def _get_clients():
+    os.environ.pop("SSL_CERT_FILE", None)
+    oai    = OpenAI(api_key=OPENAI_API_KEY)
+    qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    return oai, qdrant
+
+
+# ---------------------------------------------------------------------------
+# Stage 1: Vector search
+# ---------------------------------------------------------------------------
+
+def _embed_question(oai: OpenAI, question: str) -> list[float]:
+    """Embed the incoming question for vector search."""
+    response = oai.embeddings.create(
+        model=EMBEDDING_MODEL,
+        input=question,
     )
     return response.data[0].embedding
 
 
-def vector_search(question: str, top_k: int = RETRIEVAL_TOP_K) -> list[ScoredPoint]:
-    """Stage 1: Fast vector retrieval of candidate answers."""
-    qdrant = get_client()
-    vector = get_embedding(question)
-    results = qdrant.search(
-        collection_name=COLLECTION_RFP_ANSWERS,
-        query_vector=vector,
-        limit=top_k,
+def _vector_search(qdrant: QdrantClient, vector: list[float]) -> list[dict]:
+    """
+    Retrieve top N candidates from Qdrant.
+    Returns list of {question, answer, source, vector_score}.
+    """
+    results = qdrant.query_points(
+        collection_name=COLLECTION_NAME,
+        query=vector,
+        limit=CANDIDATE_COUNT,
         with_payload=True,
+    ).points
+
+    candidates = []
+    for r in results:
+        candidates.append({
+            "question":     r.payload.get("question", ""),
+            "answer":       r.payload.get("answer", ""),
+            "source":       r.payload.get("source", ""),
+            "vector_score": round(r.score, 4),
+        })
+
+    return candidates
+
+
+# ---------------------------------------------------------------------------
+# Stage 2: LLM judge
+# ---------------------------------------------------------------------------
+
+def _score_candidate(oai: OpenAI, question: str, candidate: dict) -> tuple[int, str]:
+    """
+    Ask the LLM to score how well the candidate answer addresses the question.
+    Returns (score: int, reason: str).
+    """
+    import json
+
+    prompt = JUDGE_PROMPT.format(
+        question=question,
+        answer=candidate["answer"],
     )
-    return results
 
+    response = oai.chat.completions.create(
+        model=JUDGE_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+        max_tokens=150,
+        response_format={"type": "json_object"},
+    )
 
-def rerank_candidate(question: str, candidate_answer: str) -> dict:
-    """
-    Stage 2: LLM scores one candidate answer for relevance to the question.
-    Returns {score, reason}.
-    """
-    user_message = f"Question: {question}\n\nCandidate Answer: {candidate_answer}"
-    from pipeline.llm_provider import chat_completion
-    raw = chat_completion(RERANK_SYSTEM_PROMPT, user_message)
+    raw = response.choices[0].message.content.strip()
+
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return {"score": 0.0, "reason": "parse error"}
+        parsed = json.loads(raw)
+        score  = int(parsed.get("score", 0))
+        reason = str(parsed.get("reason", ""))
+        score  = max(0, min(100, score))  # clamp to 0-100
+    except Exception:
+        score  = 0
+        reason = "Failed to parse LLM score."
+
+    return score, reason
 
 
-def find_best_match(question: str) -> dict | None:
+def _route(confidence: int) -> str:
+    if confidence >= THRESHOLD_AUTO:
+        return "AUTO"
+    elif confidence >= THRESHOLD_REVIEW:
+        return "REVIEW"
+    else:
+        return "HUMAN"
+
+
+# ---------------------------------------------------------------------------
+# Public interface
+# ---------------------------------------------------------------------------
+
+def match_question(question: str, verbose: bool = False) -> MatchResult:
     """
-    Full two-stage match for one question.
-    Returns the best match dict or None if no candidates found.
+    Find the best matching answer for an incoming RFP question.
 
-    Return schema:
-      question:   str
-      answer:     str
-      source:     str
-      vector_score:  float  (cosine similarity from Qdrant)
-      llm_score:     float  (LLM relevance score)
-      final_score:   float  (weighted blend)
-      llm_reason:    str
+    Args:
+        question: The incoming RFP question text.
+        verbose:  Print scoring details for each candidate.
+
+    Returns:
+        MatchResult with the best answer, confidence score, and routing decision.
     """
-    candidates = vector_search(question)
+    oai, qdrant = _get_clients()
+
+    # Stage 1: vector search
+    vector     = _embed_question(oai, question)
+    candidates = _vector_search(qdrant, vector)
+
     if not candidates:
-        return None
+        return MatchResult(
+            question=question,
+            answer="",
+            matched_question="",
+            source="",
+            confidence=0,
+            routing="HUMAN",
+            reason="No candidates found in knowledge base.",
+            vector_score=0.0,
+        )
 
-    best = None
-    best_final = -1.0
+    # Stage 2: LLM judge — score each candidate
+    best_score     = -1
+    best_candidate = None
+    best_reason    = ""
 
-    for candidate in candidates:
-        payload = candidate.payload or {}
-        answer = payload.get("answer", "")
-        if not answer:
-            continue
+    for i, candidate in enumerate(candidates, 1):
+        score, reason = _score_candidate(oai, question, candidate)
 
-        rerank = rerank_candidate(question, answer)
-        llm_score = float(rerank.get("score", 0.0))
-        vector_score = candidate.score
+        if verbose:
+            print(f"  Candidate {i} | vector={candidate['vector_score']:.3f} "
+                  f"| llm={score} | {candidate['answer'][:60]}...")
 
-        # Weighted blend: 40% vector, 60% LLM judge
-        final_score = 0.4 * vector_score + 0.6 * llm_score
+        if score > best_score:
+            best_score     = score
+            best_candidate = candidate
+            best_reason    = reason
 
-        if final_score > best_final:
-            best_final = final_score
-            best = {
-                "question": question,
-                "answer": answer,
-                "source": payload.get("source", "unknown"),
-                "vector_score": round(vector_score, 4),
-                "llm_score": round(llm_score, 4),
-                "final_score": round(final_score, 4),
-                "llm_reason": rerank.get("reason", ""),
-            }
+    return MatchResult(
+        question=question,
+        answer=best_candidate["answer"],
+        matched_question=best_candidate["question"],
+        source=best_candidate["source"],
+        confidence=best_score,
+        routing=_route(best_score),
+        reason=best_reason,
+        vector_score=best_candidate["vector_score"],
+    )
 
-    return best
+
+def match_questions(questions: list[str], verbose: bool = False) -> list[MatchResult]:
+    """Match a list of questions. Returns results in the same order."""
+    return [match_question(q, verbose=verbose) for q in questions]
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+        print("Usage: python matcher.py \"Your RFP question here\"")
+        sys.exit(1)
+
+    q      = " ".join(sys.argv[1:])
+    result = match_question(q, verbose=True)
+
+    print(f"\n{'='*60}")
+    print(f"Question:   {result.question}")
+    print(f"Routing:    {result.routing} (confidence: {result.confidence}/100)")
+    print(f"Reason:     {result.reason}")
+    print(f"Source:     {result.source}")
+    print(f"Matched Q:  {result.matched_question[:100]}")
+    print(f"Answer:\n{result.answer}")
