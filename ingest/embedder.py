@@ -4,7 +4,9 @@ ingest/embedder.py
 Embeds extracted Q&A pairs and upserts them into Qdrant.
 
 Design principles:
-  - Embeds ANSWERS only (not questions). Questions are stored in payload.
+  - Embeds QUESTIONS (not answers). Answers are stored in payload.
+    Incoming RFP questions are also embedded at match time, so question-to-question
+    vector search finds semantically similar stored questions regardless of exact wording.
   - Uses OpenAI text-embedding-3-small (1536 dims, cost-efficient).
   - Idempotent: re-running on the same source file replaces existing points
     (matched by source filename) rather than creating duplicates.
@@ -157,7 +159,7 @@ def validate_pair(pair: dict) -> tuple[bool, str]:
 # Main ingest function
 # ---------------------------------------------------------------------------
 
-def ingest_file(file_path: str, verbose: bool = True) -> dict:
+def ingest_file(file_path: str, verbose: bool = True, date: str = "") -> dict:
     """
     Full pipeline: extract → validate → embed → upsert for a single file.
 
@@ -213,7 +215,7 @@ def ingest_file(file_path: str, verbose: bool = True) -> dict:
         if verbose and idx % 10 == 0:
             print(f"      Embedding {idx}/{len(valid_pairs)}...")
 
-        vector = embed_text(oai, pair["answer"])
+        vector = embed_text(oai, pair["question"])
         points.append(
             PointStruct(
                 id=str(uuid.uuid4()),
@@ -222,6 +224,7 @@ def ingest_file(file_path: str, verbose: bool = True) -> dict:
                     "question": pair["question"],
                     "answer": pair["answer"],
                     "source": pair["source"],
+                    "date": date,
                 },
             )
         )
@@ -241,6 +244,76 @@ def ingest_file(file_path: str, verbose: bool = True) -> dict:
         "extracted": len(pairs),
         "embedded": len(valid_pairs),
         "skipped": len(skipped),
+    }
+
+
+def ingest_pairs(pairs: list[dict], source: str, date: str = "", verbose: bool = False) -> dict:
+    """
+    Validate, embed, and upsert a pre-filtered list of Q&A pairs.
+
+    Used by the Database UI after the user has reviewed and removed bad pairs.
+    Bypasses extraction (pairs are already in memory) but runs the same
+    validate → embed → upsert pipeline as ingest_file.
+
+    Args:
+        pairs:   List of {"question": str, "answer": str} dicts.
+        source:  Source filename to store in the Qdrant payload.
+        date:    ISO date string (e.g. "2024-01-15") — user-supplied document date.
+        verbose: Print progress during embedding.
+
+    Returns:
+        Summary dict with extracted / embedded / skipped counts.
+    """
+    # Validate
+    valid_pairs, skipped = [], []
+    for pair in pairs:
+        # Ensure source is set
+        pair.setdefault("source", source)
+        ok, reason = validate_pair(pair)
+        if ok:
+            valid_pairs.append(pair)
+        else:
+            skipped.append((pair.get("question", "")[:60], reason))
+
+    if not valid_pairs:
+        print("[WARN] No valid pairs to embed.")
+        return {"file": source, "extracted": len(pairs), "embedded": 0, "skipped": len(skipped)}
+
+    oai    = _get_openai_client()
+    qdrant = _get_qdrant_client()
+    ensure_collection(qdrant)
+    delete_points_for_source(qdrant, source)
+
+    points = []
+    for idx, pair in enumerate(valid_pairs, 1):
+        if verbose and idx % 10 == 0:
+            print(f"      Embedding {idx}/{len(valid_pairs)}...")
+        vector = embed_text(oai, pair["question"])
+        points.append(
+            PointStruct(
+                id=str(uuid.uuid4()),
+                vector=vector,
+                payload={
+                    "question": pair["question"],
+                    "answer":   pair["answer"],
+                    "source":   source,
+                    "date":     date,
+                },
+            )
+        )
+        if len(points) >= BATCH_SIZE:
+            qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
+            points = []
+
+    if points:
+        qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
+
+    print(f"✅ Done. Embedded {len(valid_pairs)} pairs from '{source}'.")
+    return {
+        "file":      source,
+        "extracted": len(pairs),
+        "embedded":  len(valid_pairs),
+        "skipped":   len(skipped),
     }
 
 

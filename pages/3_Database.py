@@ -1,8 +1,11 @@
 """
 pages/3_Database.py — Database Management
 
-Upload completed RFPs to the answer library, view collection stats,
-and rebuild the database when needed.
+Two-stage flow for adding completed RFPs to the answer library:
+  Stage 1 — Upload → extract Q&A pairs → show questions for review (delete bad ones)
+  Stage 2 — User enters document date → confirm → ingest with date stamp
+
+Also shows collection stats and provides a full rebuild option.
 """
 
 import sys
@@ -11,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
 import tempfile
+from datetime import date as date_type
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -25,8 +29,12 @@ load_dotenv()
 @st.cache_resource
 def get_client() -> QdrantClient | None:
     try:
-        url     = st.secrets.get("QDRANT_CLUSTER_URL", os.getenv("QDRANT_CLUSTER_URL"))
-        api_key = st.secrets.get("QDRANT_API_KEY",     os.getenv("QDRANT_API_KEY"))
+        try:
+            url     = st.secrets["QDRANT_CLUSTER_URL"]
+            api_key = st.secrets["QDRANT_API_KEY"]
+        except Exception:
+            url     = os.getenv("QDRANT_URL")
+            api_key = os.getenv("QDRANT_API_KEY")
         return QdrantClient(url=url, api_key=api_key)
     except Exception as e:
         st.error(f"Qdrant connection failed: {e}")
@@ -34,11 +42,14 @@ def get_client() -> QdrantClient | None:
 
 
 def get_collection_name() -> str:
-    return st.secrets.get("COLLECTION_NAME", os.getenv("COLLECTION_NAME", "past_rfp_answers"))
+    try:
+        return st.secrets["COLLECTION_NAME"]
+    except Exception:
+        return os.getenv("COLLECTION_NAME", "past_rfp_answers")
 
 
 # ---------------------------------------------------------------------------
-# Page
+# Page header
 # ---------------------------------------------------------------------------
 
 st.title("🗄️ Database")
@@ -68,67 +79,169 @@ except Exception as e:
     st.stop()
 
 if not exists:
-    st.warning(f"Collection **{collection_name}** does not exist yet. Upload documents or rebuild to create it.")
+    st.warning(f"Collection **{collection_name}** does not exist yet.")
     point_count = 0
 else:
     info        = client.get_collection(collection_name)
     point_count = info.points_count
     vec_size    = info.config.params.vectors.size
-
     col1, col2, col3 = st.columns(3)
-    col1.metric("Collection",    collection_name)
-    col2.metric("Answers stored", f"{point_count:,}")
+    col1.metric("Collection",        collection_name)
+    col2.metric("Answers stored",    f"{point_count:,}")
     col3.metric("Vector dimensions", vec_size)
     st.success("Connected to Qdrant ✅")
 
 st.divider()
 
 # ---------------------------------------------------------------------------
-# Upload completed RFP
+# Ingest section — stage tracking
+# ---------------------------------------------------------------------------
+
+if "db_stage" not in st.session_state:
+    st.session_state["db_stage"]    = "upload"
+    st.session_state["db_pairs"]    = []
+    st.session_state["db_source"]   = ""
+
+# ---------------------------------------------------------------------------
+# STAGE 1 — Upload & extract
 # ---------------------------------------------------------------------------
 
 st.subheader("Add Completed RFP to Library")
-st.markdown(
-    "Upload a **completed, answered** RFP document. The tool will extract Q&A pairs "
-    "and add them to the answer library for future matching."
-)
 
-uploaded = st.file_uploader(
-    "Upload completed RFP (.docx)",
-    type=["docx"],
-    help="This should be a fully answered RFP — not a blank incoming one.",
-    key="db_upload",
-)
+if st.session_state["db_stage"] == "upload":
 
-if uploaded:
-    st.info(f"**{uploaded.name}** ready to ingest.")
+    st.markdown(
+        "Upload a **completed, answered** RFP document. The tool will extract Q&A pairs "
+        "for your review before adding them to the library."
+    )
 
-    if st.button("📥 Ingest into Library", type="primary", use_container_width=True):
+    uploaded = st.file_uploader(
+        "Upload completed RFP (.docx)",
+        type=["docx"],
+        help="Fully answered RFP — not a blank incoming one.",
+        key="db_upload",
+    )
 
-        # Write to a temp file named after the original so source metadata is correct
-        tmp_dir  = Path(tempfile.mkdtemp())
-        tmp_path = tmp_dir / uploaded.name
-        tmp_path.write_bytes(uploaded.read())
+    if uploaded:
+        st.info(f"**{uploaded.name}** ready.")
 
-        with st.status("Ingesting document...", expanded=True) as status:
-            try:
-                from ingest.embedder import ingest_file
-                st.write("🔍 Extracting Q&A pairs and embedding...")
-                result = ingest_file(str(tmp_path), verbose=False)
-                st.write(f"✅ {result['embedded']} pair(s) embedded. {result['skipped']} skipped.")
-            except Exception as e:
-                status.update(label="Ingestion failed.", state="error")
-                st.error(f"Ingestion error: {e}")
+        if st.button("🔍 Extract Q&A Pairs", type="primary", use_container_width=True):
+
+            tmp_dir  = Path(tempfile.mkdtemp())
+            tmp_path = tmp_dir / uploaded.name
+            tmp_path.write_bytes(uploaded.read())
+
+            with st.spinner("Extracting Q&A pairs..."):
+                try:
+                    from ingest.extractor import extract_qa_pairs
+                    pairs = extract_qa_pairs(str(tmp_path))
+                except Exception as e:
+                    st.error(f"Extraction failed: {e}")
+                    st.stop()
+
+            if not pairs:
+                st.warning("No Q&A pairs found. Check the document format.")
                 st.stop()
 
-            status.update(label="Ingestion complete.", state="complete")
+            st.session_state["db_pairs"]  = pairs
+            st.session_state["db_source"] = uploaded.name
+            st.session_state["db_stage"]  = "review"
+            st.rerun()
 
-        st.success(
-            f"**{uploaded.name}** ingested successfully. "
-            f"{result['embedded']} new answer(s) added to the library."
-        )
-        st.cache_resource.clear()
+# ---------------------------------------------------------------------------
+# STAGE 2 — Review questions & enter date
+# ---------------------------------------------------------------------------
+
+elif st.session_state["db_stage"] == "review":
+
+    pairs  = st.session_state["db_pairs"]
+    source = st.session_state["db_source"]
+
+    st.markdown(
+        f"**{len(pairs)}** Q&A pair(s) extracted from **{source}**.  \n"
+        "Remove any pairs that were incorrectly extracted, enter the document date, "
+        "then confirm to add to the library."
+    )
+    st.divider()
+
+    # Question review list
+    to_delete = []
+    for i, pair in enumerate(pairs):
+        col_num, col_q, col_btn = st.columns([0.5, 10, 1])
+        with col_num:
+            st.markdown(f"**{i + 1}.**")
+        with col_q:
+            st.markdown(pair.get("question", "*(no question)*"))
+        with col_btn:
+            if st.button("🗑️", key=f"db_del_{i}", help="Remove this pair"):
+                to_delete.append(i)
+
+    if to_delete:
+        for idx in sorted(to_delete, reverse=True):
+            pairs.pop(idx)
+        st.session_state["db_pairs"] = pairs
         st.rerun()
+
+    st.divider()
+
+    remaining = len(st.session_state["db_pairs"])
+    st.caption(f"{remaining} pair(s) remaining.")
+
+    # Date input
+    st.markdown("**Document date**")
+    st.caption(
+        "Enter the date of this RFP (e.g. when it was completed or submitted). "
+        "This is used to prefer more recent answers when close matches are found."
+    )
+    doc_date = st.date_input(
+        "Document date",
+        value=date_type.today(),
+        label_visibility="collapsed",
+    )
+
+    col_back, col_confirm = st.columns([1, 3])
+
+    with col_back:
+        if st.button("← Start Over", use_container_width=True):
+            st.session_state["db_stage"]  = "upload"
+            st.session_state["db_pairs"]  = []
+            st.session_state["db_source"] = ""
+            st.rerun()
+
+    with col_confirm:
+        if st.button(
+            f"📥 Confirm & Ingest ({remaining} pairs)",
+            type="primary",
+            use_container_width=True,
+            disabled=remaining == 0,
+        ):
+            pairs  = st.session_state["db_pairs"]
+            source = st.session_state["db_source"]
+            date_str = str(doc_date)   # "YYYY-MM-DD"
+
+            with st.status("Ingesting...", expanded=True) as status:
+                try:
+                    from ingest.embedder import ingest_pairs
+                    st.write("🧠 Embedding and uploading to Qdrant...")
+                    result = ingest_pairs(pairs, source=source, date=date_str, verbose=False)
+                    status.update(label="Ingestion complete.", state="complete")
+                except Exception as e:
+                    status.update(label="Ingestion failed.", state="error")
+                    st.error(f"Ingestion error: {e}")
+                    st.stop()
+
+            st.success(
+                f"**{source}** ingested successfully.  \n"
+                f"{result['embedded']} answer(s) added · {result['skipped']} skipped · "
+                f"Date: {date_str}"
+            )
+
+            # Reset stage
+            st.session_state["db_stage"]  = "upload"
+            st.session_state["db_pairs"]  = []
+            st.session_state["db_source"] = ""
+            st.cache_resource.clear()
+            st.rerun()
 
 st.divider()
 
@@ -139,20 +252,18 @@ st.divider()
 st.subheader("Rebuild Database")
 st.markdown(
     "Wipe and rebuild the entire collection from a folder of completed RFP documents. "
-    "Use this if the database is corrupted or you want a clean start."
+    "Note: documents ingested this way will not have date stamps unless you add them manually afterwards."
 )
 
 rebuild_dir = st.text_input(
     "Path to folder containing completed RFP documents",
     value="past_rfps",
-    help="Absolute or relative path to a directory of answered .docx files.",
 )
 
 with st.expander("⚠️ Warning — this will delete all existing data", expanded=False):
     st.warning(
-        "Rebuilding the database deletes all current vectors and re-embeds from scratch. "
-        "This cannot be undone. Make sure all source documents are in the folder above "
-        "before proceeding."
+        "Rebuilding deletes all current vectors and re-embeds from scratch. "
+        "This cannot be undone."
     )
     confirm = st.checkbox("I understand — proceed with rebuild")
 
@@ -169,7 +280,7 @@ with st.expander("⚠️ Warning — this will delete all existing data", expand
                     with st.status(f"Rebuilding from {len(docs)} document(s)...", expanded=True) as status:
                         try:
                             from ingest.embedder import ingest_directory
-                            results     = ingest_directory(str(folder))
+                            results       = ingest_directory(str(folder))
                             total_added   = sum(r.get("embedded", 0) for r in results)
                             total_skipped = sum(r.get("skipped",  0) for r in results)
                             status.update(label="Rebuild complete.", state="complete")

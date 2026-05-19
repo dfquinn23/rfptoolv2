@@ -141,6 +141,8 @@ def _result_to_dict(r: MatchResult) -> dict:
         "routing":          r.routing,
         "reason":           r.reason,
         "vector_score":     round(r.vector_score, 4),
+        "date":             r.date,
+        "candidates":       r.candidates,
     }
 
 

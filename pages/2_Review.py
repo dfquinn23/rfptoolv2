@@ -53,6 +53,8 @@ def _init_state(session: dict) -> None:
                 "reason":           item.get("reason", ""),
                 "vector_score":     item.get("vector_score", 0.0),
                 "doc_order":        item.get("doc_order", idx),
+                "date":             item.get("date", ""),
+                "candidates":       item.get("candidates", []),
                 "approved":         tier == "auto",
             }
             idx += 1
@@ -97,35 +99,109 @@ def _render_question_card(idx: int, item: dict, editable: bool) -> None:
             if item["reason"]:
                 st.caption(f"LLM reasoning: {item['reason']}")
 
-        # Answer area
-        if editable:
-            new_answer = st.text_area(
-                "Answer",
-                value=item["answer"],
-                height=180,
-                key=f"answer_{idx}",
+        # Close candidate selection (when 2+ answers within tiebreak threshold)
+        candidates = item.get("candidates", [])
+        if len(candidates) > 1:
+            st.markdown("**⚠️ Multiple close matches found — select to preview each answer:**")
+            labels = []
+            for cand in candidates:
+                date_str = f" · {cand['date']}" if cand.get("date") else " · No date"
+                labels.append(
+                    f"Score: {cand['confidence']}%{date_str} — {cand.get('source', 'Unknown')}"
+                )
+            selected_label = st.radio(
+                "Candidates",
+                labels,
+                key=f"cand_{idx}",
+                index=0,
                 label_visibility="collapsed",
             )
-            # Persist edits back to session state
-            st.session_state["answers"][idx]["answer"] = new_answer
+            selected_i     = labels.index(selected_label)
+            selected_cand  = candidates[selected_i]
 
-            col_approve, col_reset = st.columns([3, 1])
-            with col_approve:
-                approved = st.checkbox(
-                    "Mark as approved",
-                    value=item.get("approved", False),
-                    key=f"approved_{idx}",
-                )
-                st.session_state["answers"][idx]["approved"] = approved
-            with col_reset:
-                if st.button("Reset", key=f"reset_{idx}", help="Restore original matched answer"):
-                    st.session_state["answers"][idx]["answer"]   = item["original_answer"]
-                    st.session_state["answers"][idx]["approved"] = False
-                    st.rerun()
-        else:
-            # AUTO — read-only display
-            st.markdown(item["answer"])
-            st.session_state["answers"][idx]["approved"] = True
+            # Live preview of the selected candidate's answer
+            st.markdown("**Preview:**")
+            st.info(selected_cand["answer"])
+
+            # Load into answer field (deletes key so text_area re-initialises)
+            if st.button("↓ Load this answer into edit field", key=f"load_cand_{idx}"):
+                if f"answer_{idx}" in st.session_state:
+                    del st.session_state[f"answer_{idx}"]
+                st.session_state["answers"][idx]["answer"] = selected_cand["answer"]
+                st.rerun()
+
+        # Answer area — always editable
+        new_answer = st.text_area(
+            "Answer",
+            value=item["answer"],
+            height=180,
+            key=f"answer_{idx}",
+            label_visibility="collapsed",
+        )
+        st.session_state["answers"][idx]["answer"] = new_answer
+
+        col_approve, col_reset = st.columns([3, 1])
+        with col_approve:
+            approved = st.checkbox(
+                "Mark as approved",
+                value=item.get("approved", False),
+                key=f"approved_{idx}",
+            )
+            st.session_state["answers"][idx]["approved"] = approved
+        with col_reset:
+            if st.button("Reset", key=f"reset_{idx}", help="Restore original matched answer"):
+                if f"answer_{idx}" in st.session_state:
+                    del st.session_state[f"answer_{idx}"]
+                st.session_state["answers"][idx]["answer"] = item["original_answer"]
+                st.session_state["answers"][idx]["approved"] = False
+                st.rerun()
+
+        # Library search
+        with st.expander("🔍 Search Library", expanded=False):
+            results_key = f"search_results_{idx}"
+
+            query = st.text_input(
+                "Search keywords or rephrase the question",
+                key=f"search_query_{idx}",
+                placeholder="e.g. firm background history founded",
+            )
+
+            if st.button("Search", key=f"search_btn_{idx}", type="secondary"):
+                if query.strip():
+                    with st.spinner("Searching..."):
+                        try:
+                            from pipeline.matcher import search_library
+                            results = search_library(query.strip(), top_k=5)
+                            st.session_state[results_key] = results
+                        except Exception as e:
+                            st.error(f"Search failed: {e}")
+                else:
+                    st.warning("Enter a search term above.")
+
+            results = st.session_state.get(results_key, [])
+            if results:
+                st.markdown("**Results — click Use to apply:**")
+                for r_idx, result in enumerate(results):
+                    with st.container(border=True):
+                        rc1, rc2 = st.columns([8, 1])
+                        with rc1:
+                            st.markdown(f"**{result['question']}**")
+                            st.caption(
+                                f"Source: {result['source']}  ·  Score: {result['vector_score']:.3f}"
+                                + (f"  ·  {result['date']}" if result.get("date") else "")
+                            )
+                            st.markdown(
+                                result["answer"][:300] +
+                                ("..." if len(result["answer"]) > 300 else "")
+                            )
+                        with rc2:
+                            if st.button("Use", key=f"use_{idx}_{r_idx}"):
+                                if f"answer_{idx}" in st.session_state:
+                                    del st.session_state[f"answer_{idx}"]
+                                st.session_state["answers"][idx]["answer"]   = result["answer"]
+                                st.session_state["answers"][idx]["approved"] = False
+                                st.session_state[results_key] = []
+                                st.rerun()
 
 
 def _build_export_doc(answers: dict, source_filename: str) -> bytes:
@@ -218,8 +294,7 @@ st.divider()
 sorted_items = sorted(answers.items(), key=lambda x: x[1].get("doc_order", x[0]))
 
 for idx, item in sorted_items:
-    editable = item["routing"] != "AUTO"
-    _render_question_card(idx, item, editable=editable)
+    _render_question_card(idx, item, editable=True)
 
 st.divider()
 

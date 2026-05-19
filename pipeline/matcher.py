@@ -17,7 +17,7 @@ Routing tiers (based on confidence score 0-100):
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
 from openai import OpenAI
 from qdrant_client import QdrantClient
@@ -40,6 +40,7 @@ CANDIDATE_COUNT  = 5       # how many candidates to pull from Qdrant
 THRESHOLD_AUTO   = 80      # confidence ≥ 80 → auto-insert
 THRESHOLD_REVIEW = 50      # confidence 50-79 → light review
                            # confidence < 50  → human queue
+TIEBREAK_THRESHOLD = 5     # surface all candidates within this many points of top score
 
 JUDGE_PROMPT = """You are evaluating whether a stored answer from a completed RFP 
 adequately addresses an incoming RFP question.
@@ -66,14 +67,16 @@ Reply with ONLY a JSON object in this format: {{"score": <integer 0-100>, "reaso
 
 @dataclass
 class MatchResult:
-    question:        str    # incoming question
-    answer:          str    # verbatim answer from knowledge base
-    matched_question: str   # the question this answer was originally paired with
-    source:          str    # source document filename
-    confidence:      int    # 0-100
-    routing:         str    # "AUTO", "REVIEW", or "HUMAN"
-    reason:          str    # LLM's one-sentence explanation
-    vector_score:    float  # raw Qdrant cosine similarity score
+    question:         str    # incoming question
+    answer:           str    # verbatim answer from knowledge base
+    matched_question: str    # the question this answer was originally paired with
+    source:           str    # source document filename
+    confidence:       int    # 0-100
+    routing:          str    # "AUTO", "REVIEW", or "HUMAN"
+    reason:           str    # LLM's one-sentence explanation
+    vector_score:     float  # raw Qdrant cosine similarity score
+    date:             str              = ""                   # document date from payload
+    candidates:       list             = field(default_factory=list)  # close competitors
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +121,7 @@ def _vector_search(qdrant: QdrantClient, vector: list[float]) -> list[dict]:
             "question":     r.payload.get("question", ""),
             "answer":       r.payload.get("answer", ""),
             "source":       r.payload.get("source", ""),
+            "date":         r.payload.get("date", ""),
             "vector_score": round(r.score, 4),
         })
 
@@ -205,32 +209,88 @@ def match_question(question: str, verbose: bool = False) -> MatchResult:
         )
 
     # Stage 2: LLM judge — score each candidate
-    best_score     = -1
-    best_candidate = None
-    best_reason    = ""
-
+    scored = []
     for i, candidate in enumerate(candidates, 1):
         score, reason = _score_candidate(oai, question, candidate)
-
         if verbose:
             print(f"  Candidate {i} | vector={candidate['vector_score']:.3f} "
                   f"| llm={score} | {candidate['answer'][:60]}...")
+        scored.append((score, reason, candidate))
 
-        if score > best_score:
-            best_score     = score
-            best_candidate = candidate
-            best_reason    = reason
+    # Sort by score descending
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top_score = scored[0][0]
+
+    # Build list of candidates within TIEBREAK_THRESHOLD of the top score
+    close = [
+        {
+            "answer":           c["answer"],
+            "matched_question": c["question"],
+            "source":           c["source"],
+            "confidence":       s,
+            "vector_score":     c["vector_score"],
+            "date":             c.get("date", ""),
+            "reason":           r,
+        }
+        for s, r, c in scored
+        if top_score - s <= TIEBREAK_THRESHOLD
+    ]
+
+    # Sort close candidates by date descending — most recent first, undated last
+    close.sort(key=lambda x: x.get("date") or "0000-00-00", reverse=True)
+
+    # Primary answer = first after date sort (most recent, or top scorer if no dates)
+    primary = close[0]
+
+    # Only surface candidates to the UI when 2+ are within the threshold
+    candidates_for_ui = close if len(close) > 1 else []
 
     return MatchResult(
         question=question,
-        answer=best_candidate["answer"],
-        matched_question=best_candidate["question"],
-        source=best_candidate["source"],
-        confidence=best_score,
-        routing=_route(best_score),
-        reason=best_reason,
-        vector_score=best_candidate["vector_score"],
+        answer=primary["answer"],
+        matched_question=primary["matched_question"],
+        source=primary["source"],
+        confidence=primary["confidence"],
+        routing=_route(primary["confidence"]),
+        reason=primary["reason"],
+        vector_score=primary["vector_score"],
+        date=primary.get("date", ""),
+        candidates=candidates_for_ui,
     )
+
+
+def search_library(query: str, top_k: int = 5) -> list[dict]:
+    """
+    Search the library for questions matching a free-text query.
+    Used by the Review UI to let reviewers find better answers manually.
+
+    Args:
+        query:  Any text — keywords, a rephrased question, topic words.
+        top_k:  Number of results to return.
+
+    Returns:
+        List of candidate dicts with question, answer, source, vector_score.
+    """
+    oai, qdrant = _get_clients()
+    vector      = _embed_question(oai, query)
+
+    results = qdrant.query_points(
+        collection_name=COLLECTION_NAME,
+        query=vector,
+        limit=top_k,
+        with_payload=True,
+    ).points
+
+    return [
+        {
+            "question":     r.payload.get("question", ""),
+            "answer":       r.payload.get("answer", ""),
+            "source":       r.payload.get("source", ""),
+            "date":         r.payload.get("date", ""),
+            "vector_score": round(r.score, 4),
+        }
+        for r in results
+    ]
 
 
 def match_questions(questions: list[str], verbose: bool = False) -> list[MatchResult]:

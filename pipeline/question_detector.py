@@ -231,6 +231,71 @@ def detect_questions(file_path: str, verbose: bool = False) -> list[str]:
     return unique
 
 
+def generate_clean_doc(questions: list[str], output_path: str, source_name: str = "") -> str:
+    """
+    Write a numbered questions-only Word document for human review.
+
+    Args:
+        questions:   Ordered list of question strings.
+        output_path: Where to save the .docx file.
+        source_name: Original RFP filename — included in the document title.
+
+    Returns:
+        The output path.
+    """
+    from docx.shared import Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    doc = Document()
+
+    # Title
+    title = doc.add_heading("RFP Questions — Clean Copy", level=1)
+    title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    if source_name:
+        sub = doc.add_paragraph(f"Source: {source_name}")
+        sub.runs[0].font.size = Pt(9)
+        sub.runs[0].font.italic = True
+
+    doc.add_paragraph("")
+
+    # Numbered questions
+    for i, q in enumerate(questions, 1):
+        para      = doc.add_paragraph()
+        run       = para.add_run(f"{i}. {q}")
+        run.font.size = Pt(11)
+        para.paragraph_format.space_after = Pt(6)
+
+    doc.save(output_path)
+    return output_path
+
+
+def read_clean_doc(file_path: str) -> list[str]:
+    """
+    Parse a clean questions-only Word document back into an ordered list.
+
+    Expects paragraphs formatted as "N. Question text" (produced by
+    generate_clean_doc). Preserves the original numbering order.
+
+    Args:
+        file_path: Path to the approved clean .docx file.
+
+    Returns:
+        Ordered list of question strings, stripped of their number prefixes.
+    """
+    doc       = Document(file_path)
+    questions = []
+
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        # Match "1. text", "12. text", etc.
+        match = re.match(r"^\d+\.\s+(.+)$", text)
+        if match:
+            questions.append(match.group(1).strip())
+
+    return questions
+
+
 # ---------------------------------------------------------------------------
 # CLI — smoke test
 # ---------------------------------------------------------------------------
