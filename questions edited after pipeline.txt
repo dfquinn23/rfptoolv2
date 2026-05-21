@@ -1,0 +1,60 @@
+1. Provide a brief summary of the firm’s background and history.
+2. Is the firm minority, veteran, disabled, or a woman owned business?
+3. Complete the table below outlining the ownership of the firm, inserting rows as necessary.
+4. Is the firm part of a group?
+5. Please provide details of the firm’s offices including office location, business function and number of employees at each office.
+6. Please provide names, titles and bios of all Senior Executives.
+7. What is the total number of employees at the organization?
+8. Is the firm regulated by the SEC or any other organization?
+9. Have there been any significant events affecting the firm’s operations in the last year?
+10. Is there a formal directive from the board of directors or senior management to maintain a formal Business Continuity Plan (BCP)?
+11. What actions or occurrence prompt updates or modifications to the plan?
+12. When was the last review or update to the BCP?
+13. Please describe the team responsible for maintaining the BCP.
+14. How often is the BCP tested and when was the last test of the BCP?
+15. Briefly summarize the scenario used for recent testing or exercises that were performed. Was the test or exercise successful?
+16. Is there a formal directive from the board of directors or senior management to maintain a formal Disaster Recovery Plan (DRP)?
+17. Do you formally test your DRP? What is the testing cadence?
+18. Do you have a formal Incident Response policy?
+19. Is your Incident Response policy tested?
+20. What is the cadence of testing?
+21. Please provide a description of your technology network and indicate if you maintain a traditional server-based infrastructure or operate entirely in the cloud?
+22. If you maintain a traditional server, please advise the following: Advise server location(s), Details of physical security (data center), Do you maintain backup? How often? Where are they kept? Are alerts generated for failed back-ups? If so, what actions are taken for failed back-ups?
+23. Is data periodically restored from backups for testing, and if so, how often are data restoration tests performed?
+24. Are recovery/backup locations maintained in a cold, warm or hot manner?
+25. If a recovery site is not contracted, do you have agreements in place to acquire replacement equipment as needed?
+26. If you maintain a cloud network, please advise the following:
+27. Who is your cloud provider?
+28. Do you maintain a file server, or do you use services like Office 365, Dropbox, Box, etc. to store files?
+29. Do you own or rent your equipment from the provider?
+30. Where are your providers’ data centers located?
+31. Are Penetration Tests performed by a qualified third party?
+32. If so, how often are they performed and when was the last test performed?
+33. Are Vulnerability Assessments performed either internally or by a third party?
+34. Are Phishing, Social Engineering, or Physical Penetration tests performed? If so, please explain.
+35. What training do you maintain for employees in regard to Phishing, Social Engineering and/or Physical threats? How often are employees required to attend such trainings? Is the training mandatory?
+36. Who is responsible for tracking and remediating issues and vulnerabilities that arise from penetration testing or vulnerability scans?
+37. Is Multi Factor Authentication (MFA, 2FA, 2 Factor Authentication) in place for all employees when accessing the firm’s resources remotely?
+38. Does your firm have a policy that describes your approach to identifying and managing material environmental, social, or governance (ESG) factors? If so, please provide a copy. If not, please indicate whether the firm is developing such a policy.
+39. Does the firm have an ESG (or similar functioning) Committee? Please describe how it operates.
+40. Describe your firm’s approach to workplace diversity and inclusion and how it relates to your business model.
+41. Does your firm have a written policy addressing workplace diversity and inclusion (“D&I Policy”)?
+42. Does the firm have an Anti-Harassment/Discrimination Policy? How often is training provided on the Policy to employees? Does the firm intend to adopt such a policy and, if so, when?
+43. Has your firm been subject to any judicial, regulatory, or other legal finding, formal action, or claims related to equal employment opportunity, workplace discrimination, or sexual harassment during the past five years? Please describe.
+44. Does the firm comply with Subchapter VII of the Civil Rights Act of 1964?
+45. How is the firm committed to the safety of its employees?
+46. How is the firm committed to energy, water and waste efficiency?
+47. How does your firm engage with tenants and local stakeholders to raise and improve environmental and social issues?
+48. Is the firm aware of any Stockbridge employee (or immediate family member of the employee) benefiting economically as a result of the firm being awarded a contract (or a contract renewed)?
+49. Is the firm aware of any immediate family member (spouse, sibling, child or parent) or a Stockbridge employee being an owner or director of the organization?
+50. If an owner, officer or director of the firm, or any employee of the firm that will be working on the Stockbridge account or assets, has been convicted of any crime or found liable in a civil or administrative proceeding or pleaded nolo contendere or agreed to any consent decree with respect to any matter involving breach of trust or fiduciary duty, fraud, securities law violations, bankruptcy law regulations, any felony, or any act or omission involving moral turpitude, has it been reported to Stockbridge?
+51. Are there any threatened, current or past lawsuits that have been filed against your firm in the last 5 years, that could have a material financial impact on the firm or may otherwise cause significant reputational damage?
+52. Describe the structure of the accounting group; number of accountants, supervisors, etc.
+53. Does the firm have appropriate segregation of duties?
+54. Describe what accounting system will be used for the engagement.
+55. Has any cash been misappropriated from any assets managed by the property management firm in the last 5 years? If yes, please describe.
+56. Have there been any significant changes to the cash control procedures in the last year?
+57. Has the property management firm or any tenant of a property the firm manages, wired money to a cybercriminal in relation to a spoofing email or phishing attack? If so, please describe the circumstances.
+58. Does the firm ensure that verbal call back procedures (to a known party) are performed in order to verify all wires or other similar financial transactions?
+59. Does the firm have reasonably designed procedures to avoid money laundering occurring at properties under management?
+60. Does the firm have reasonably designed procedures to ensure modern slavery or human trafficking is not taking place at properties under management?
