@@ -19,6 +19,7 @@ import streamlit as st
 
 from pipeline.question_detector import detect_questions, generate_clean_doc
 from pipeline.router import route_rfp, save_session
+from core.doc_converter import convert_to_docx, DocConversionError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -75,22 +76,31 @@ if "pipeline_stage" not in st.session_state:
 if st.session_state["pipeline_stage"] == "upload":
 
     uploaded = st.file_uploader(
-        "Upload raw incoming RFP (.docx)",
-        type=["docx"],
+        "Upload raw incoming RFP (.docx or .doc)",
+        type=["docx", "doc"],
         help="Upload the RFP exactly as received — extraneous content will be stripped automatically.",
     )
 
     if uploaded is None:
-        st.info("Upload a .docx file above to get started.")
+        st.info("Upload a .docx or .doc file above to get started.")
         st.stop()
 
     st.success(f"**{uploaded.name}** ready.")
 
     if st.button("🔍 Detect Questions", type="primary", use_container_width=True):
 
-        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        suffix = Path(uploaded.name).suffix.lower()
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             tmp.write(uploaded.read())
             tmp_path = tmp.name
+
+        if suffix == ".doc":
+            with st.spinner("Converting legacy .doc to .docx..."):
+                try:
+                    tmp_path = convert_to_docx(tmp_path)
+                except DocConversionError as e:
+                    st.error(str(e))
+                    st.stop()
 
         with st.spinner("Detecting questions..."):
             try:
