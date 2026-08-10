@@ -461,13 +461,17 @@ def _context_snippet(indexed: list[tuple[int, str]], center_idx: int,
     return "\n".join(lines)
 
 
-def _match_to_approved(records: list[dict], approved_questions: list[str],
-                        threshold: float = MATCH_THRESHOLD) -> list[dict]:
+def match_to_approved(records: list[dict], approved_questions: list[str],
+                       threshold: float = MATCH_THRESHOLD) -> list[dict]:
     """
-    Align located records to the user's approved/edited question list
-    (fuzzy text match). Approved questions with no confident match get a
-    placeholder "unclear" record — they still need to show up in the
-    verification UI, since they'll fall to the addendum either way.
+    Align located records to a list of question strings (fuzzy text match).
+    Public — shared by get_structure_verification() (below) and by
+    pipeline.inserter, so the question-matching logic lives in exactly one
+    place rather than being duplicated across the Locator and the Inserter.
+
+    Questions with no confident match get a placeholder "unclear" record —
+    they still need to show up downstream, since they'll fall to the
+    addendum either way.
     """
     used: set[int] = set()
     matched: list[dict] = []
@@ -540,7 +544,7 @@ def get_structure_verification(
     records = _locate_from_indexed(indexed, table_adjacent_idxs, verbose=verbose)
 
     if approved_questions is not None:
-        records = _match_to_approved(records, approved_questions)
+        records = match_to_approved(records, approved_questions)
 
     results: list[dict] = []
     for r in records:

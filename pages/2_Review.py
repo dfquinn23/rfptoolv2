@@ -20,6 +20,7 @@ from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from pipeline.router import load_session, DEFAULT_SESSION_PATH
+from pipeline.orchestrator import run_merge
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -295,6 +296,95 @@ sorted_items = sorted(answers.items(), key=lambda x: x[1].get("doc_order", x[0])
 
 for idx, item in sorted_items:
     _render_question_card(idx, item, editable=True)
+
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Merge into original RFP
+# ---------------------------------------------------------------------------
+
+st.subheader("Merge into Original RFP")
+
+original_bytes = st.session_state.get("original_docx_bytes")
+
+if not original_bytes:
+    st.info(
+        "The original document isn't available for this session (it may "
+        "predate this feature, or the session was loaded from a saved "
+        "file). Re-run this RFP through **Run Pipeline** to enable merging, "
+        "or use the plain export below instead."
+    )
+else:
+    approved_for_merge = [
+        {"question": item["question"], "answer": item["answer"]}
+        for item in answers.values()
+        if item.get("approved", False) and (item.get("answer") or "").strip()
+    ]
+
+    st.markdown(
+        f"Insert **{len(approved_for_merge)}** approved answer(s) directly into "
+        f"a copy of the original document. Anything the tool can't confidently "
+        f"place — table fields, ambiguous structure, unmatched questions — "
+        f"comes back separately as an addendum, never guessed at."
+    )
+
+    merge_disabled = len(approved_for_merge) == 0
+    if merge_disabled:
+        st.caption("Approve at least one answer above to enable merging.")
+
+    if st.button(
+        "🔀 Merge & Export",
+        type="primary",
+        use_container_width=True,
+        disabled=merge_disabled,
+    ):
+        with st.spinner("Locating answer slots and merging..."):
+            try:
+                merge_result = run_merge(
+                    original_bytes,
+                    source_filename,
+                    approved_for_merge,
+                    verbose=False,
+                )
+                st.session_state["merge_result"] = merge_result
+            except Exception as e:
+                st.error(f"Merge failed: {e}")
+                st.stop()
+
+    merge_result = st.session_state.get("merge_result")
+    if merge_result is not None:
+        st.success(
+            f"Merge complete. {merge_result.inserted_count} of "
+            f"{merge_result.total_questions} approved answer(s) inserted "
+            f"directly into the document."
+        )
+
+        col_merged, col_addendum = st.columns(2)
+        with col_merged:
+            st.download_button(
+                label="⬇️ Download Merged RFP",
+                data=merge_result.merged_docx_bytes,
+                file_name=merge_result.merged_filename,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
+        with col_addendum:
+            st.download_button(
+                label=f"⬇️ Download Addendum ({merge_result.skipped_count})",
+                data=merge_result.addendum_docx_bytes,
+                file_name=merge_result.addendum_filename,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+                disabled=not merge_result.has_addendum_items,
+            )
+
+        if merge_result.has_addendum_items:
+            st.caption(
+                f"Addendum breakdown — "
+                f"table fields: {merge_result.addendum_counts.get('table', 0)}, "
+                f"needs manual placement: {merge_result.addendum_counts.get('manual_placement', 0)}, "
+                f"missing answers: {merge_result.addendum_counts.get('missing_answer', 0)}."
+            )
 
 st.divider()
 

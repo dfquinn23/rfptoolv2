@@ -113,6 +113,13 @@ if st.session_state["pipeline_stage"] == "upload":
             st.warning("No questions detected. Check the file and try again.")
             st.stop()
 
+        # Persist the original (post-conversion) document bytes so later
+        # pages — specifically the Merge step on Review — can write approved
+        # answers back into this exact document without asking the user to
+        # re-upload it.
+        with open(tmp_path, "rb") as f:
+            st.session_state["original_docx_bytes"] = f.read()
+
         st.session_state["questions_text"]  = _questions_to_text(questions)
         st.session_state["source_filename"] = uploaded.name
         st.session_state["pipeline_stage"]  = "edit"
@@ -165,6 +172,7 @@ elif st.session_state["pipeline_stage"] == "edit":
             st.session_state["pipeline_stage"]  = "upload"
             st.session_state["questions_text"]  = ""
             st.session_state["source_filename"] = ""
+            st.session_state["original_docx_bytes"] = None
             st.rerun()
 
     with col_download:
@@ -273,6 +281,7 @@ elif st.session_state["pipeline_stage"] == "complete":
             st.session_state["pipeline_stage"]  = "upload"
             st.session_state["questions_text"]  = ""
             st.session_state["pipeline_output"] = None
+            st.session_state["original_docx_bytes"] = None
             st.rerun()
     with col_review:
         st.page_link("pages/2_Review.py", label="Go to Review & Export →", icon="🔍")
