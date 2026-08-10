@@ -62,6 +62,7 @@ def _init_state(session: dict) -> None:
 
     st.session_state["answers"]     = answers
     st.session_state["total_items"] = idx
+    st.session_state.setdefault("approval_version", 0)
 
 
 def _render_question_card(idx: int, item: dict, editable: bool) -> None:
@@ -143,10 +144,11 @@ def _render_question_card(idx: int, item: dict, editable: bool) -> None:
 
         col_approve, col_reset = st.columns([3, 1])
         with col_approve:
+            approval_version = st.session_state.get("approval_version", 0)
             approved = st.checkbox(
                 "Mark as approved",
                 value=item.get("approved", False),
-                key=f"approved_{idx}",
+                key=f"approved_{idx}_v{approval_version}",
             )
             st.session_state["answers"][idx]["approved"] = approved
         with col_reset:
@@ -155,6 +157,7 @@ def _render_question_card(idx: int, item: dict, editable: bool) -> None:
                     del st.session_state[f"answer_{idx}"]
                 st.session_state["answers"][idx]["answer"] = item["original_answer"]
                 st.session_state["answers"][idx]["approved"] = False
+                st.session_state["approval_version"] = st.session_state.get("approval_version", 0) + 1
                 st.rerun()
 
         # Library search
@@ -289,15 +292,20 @@ st.progress(approved_count / max(len(answers), 1), text=f"{approved_count} of {l
 col_approve_all, col_unapprove_all, _ = st.columns([1, 1, 3])
 with col_approve_all:
     if st.button("✅ Approve All", use_container_width=True):
-        for idx, item in st.session_state["answers"].items():
+        for item in st.session_state["answers"].values():
             item["approved"] = True
-            st.session_state.pop(f"approved_{idx}", None)  # clear stale checkbox widget state
+        # Bump the version so every checkbox gets a brand-new widget
+        # identity next render, forcing it to re-read the updated value
+        # instead of clinging to its own stale visual state (a Streamlit
+        # quirk — clearing the old key alone wasn't reliable here, same
+        # pattern used for the question editor in 1_Pipeline.py).
+        st.session_state["approval_version"] = st.session_state.get("approval_version", 0) + 1
         st.rerun()
 with col_unapprove_all:
     if st.button("↩️ Unapprove All", use_container_width=True):
-        for idx, item in st.session_state["answers"].items():
+        for item in st.session_state["answers"].values():
             item["approved"] = False
-            st.session_state.pop(f"approved_{idx}", None)  # clear stale checkbox widget state
+        st.session_state["approval_version"] = st.session_state.get("approval_version", 0) + 1
         st.rerun()
 
 st.divider()
