@@ -100,9 +100,19 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 
 OPENAI_MODEL     = "gpt-4o-mini"
-MAX_CHUNK_LINES  = 250   # split documents larger than this many indexed lines
-CHUNK_OVERLAP    = 15    # lines of overlap between chunks, to avoid cutting
+MAX_CHUNK_LINES  = 80    # split documents larger than this many indexed lines.
+                         # Kept intentionally small: this bounds not just the
+                         # LLM's input but, more importantly, its OUTPUT — a
+                         # dense document (many short questions) can need a
+                         # JSON array far larger than a sparse one with the
+                         # same paragraph count. A chunk that's too large can
+                         # cause the response to be truncated mid-generation,
+                         # which silently discards every question in that
+                         # chunk (see _parse_json_array_lenient below for the
+                         # safety net on top of this).
+CHUNK_OVERLAP    = 10    # lines of overlap between chunks, to avoid cutting
                          # a question away from its answer slot at a boundary
+MAX_OUTPUT_TOKENS = 8192 # generous ceiling for the JSON response itself
 CONTEXT_WINDOW   = 2     # paragraphs of context shown before/after a question
                          # in the structure-verification snippet
 MATCH_THRESHOLD  = 0.6   # min similarity to match an approved question back
@@ -249,6 +259,62 @@ If insertion_type is "unclear", answer_para_idx should be null.
 """
 
 
+def _parse_json_array_lenient(raw: str) -> list[dict]:
+    """
+    Parse the LLM's JSON array response, tolerating truncation.
+
+    If the response got cut off mid-generation (hit the token ceiling before
+    finishing), a strict json.loads() fails and — without this — the entire
+    response gets thrown away, including every complete, valid question
+    object that came before the cutoff. That's a silent, total data loss for
+    that whole chunk, not a graceful degradation.
+
+    Instead: scan for complete top-level {...} objects by bracket depth, and
+    keep every one that parses cleanly, discarding only the incomplete tail.
+    A shrunk chunk size and a generous MAX_OUTPUT_TOKENS (see config above)
+    should make truncation rare — this is the defense-in-depth backstop for
+    when it happens anyway.
+    """
+    raw = raw.strip()
+    raw = re.sub(r"^```[a-z]*\n?", "", raw)
+    raw = re.sub(r"\n?```$",        "", raw)
+
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    objects: list[dict] = []
+    depth = 0
+    start = None
+    for i, ch in enumerate(raw):
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                candidate = raw[start:i + 1]
+                try:
+                    objects.append(json.loads(candidate))
+                except json.JSONDecodeError:
+                    pass  # this one object was itself malformed — skip it only
+                start = None
+
+    if objects:
+        print(f"[locator] WARNING: response was truncated or malformed — "
+              f"recovered {len(objects)} complete question(s) from it rather "
+              f"than discarding the whole chunk. Consider this a signal to "
+              f"check MAX_CHUNK_LINES if it happens often.")
+    else:
+        print(f"[locator] WARNING: LLM returned non-JSON, nothing recoverable:\n{raw[:200]}")
+
+    return objects
+
+
 def _call_llm(client: OpenAI, indexed_chunk: list[tuple[int, str]]) -> list[dict]:
     """Send one indexed chunk to the LLM and parse the returned JSON array."""
     text_block = "\n".join(f"{idx}: {text}" for idx, text in indexed_chunk)
@@ -256,7 +322,7 @@ def _call_llm(client: OpenAI, indexed_chunk: list[tuple[int, str]]) -> list[dict
     response = client.chat.completions.create(
         model=OPENAI_MODEL,
         temperature=0,
-        max_tokens=4096,
+        max_tokens=MAX_OUTPUT_TOKENS,
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user",   "content": text_block},
@@ -264,17 +330,7 @@ def _call_llm(client: OpenAI, indexed_chunk: list[tuple[int, str]]) -> list[dict
     )
 
     raw = response.choices[0].message.content.strip()
-    raw = re.sub(r"^```[a-z]*\n?", "", raw)
-    raw = re.sub(r"\n?```$",        "", raw)
-
-    try:
-        records = json.loads(raw)
-        if isinstance(records, list):
-            return records
-    except json.JSONDecodeError:
-        print(f"[locator] WARNING: LLM returned non-JSON:\n{raw[:200]}")
-
-    return []
+    return _parse_json_array_lenient(raw)
 
 
 # ---------------------------------------------------------------------------

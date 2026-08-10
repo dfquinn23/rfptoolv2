@@ -286,6 +286,20 @@ c4.metric("🔴 Human", summary.get("human",  0))
 approved_count = sum(1 for i in answers.values() if i.get("approved", False))
 st.progress(approved_count / max(len(answers), 1), text=f"{approved_count} of {len(answers)} approved")
 
+col_approve_all, col_unapprove_all, _ = st.columns([1, 1, 3])
+with col_approve_all:
+    if st.button("✅ Approve All", use_container_width=True):
+        for idx, item in st.session_state["answers"].items():
+            item["approved"] = True
+            st.session_state.pop(f"approved_{idx}", None)  # clear stale checkbox widget state
+        st.rerun()
+with col_unapprove_all:
+    if st.button("↩️ Unapprove All", use_container_width=True):
+        for idx, item in st.session_state["answers"].items():
+            item["approved"] = False
+            st.session_state.pop(f"approved_{idx}", None)  # clear stale checkbox widget state
+        st.rerun()
+
 st.divider()
 
 # ---------------------------------------------------------------------------
